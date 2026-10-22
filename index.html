@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>راهنمای ساخت پلتفرم مشابه Postproxy فقط برای متا</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: Vazirmatn, Tahoma, sans-serif; background: #f6f7f9; }
+    .hero { background: #111827; color: #fff; }
+    h1, h2, h3 { font-weight: 700; }
+    .step-num { width: 2rem; height: 2rem; }
+    code, pre { direction: ltr; text-align: left; }
+    pre { background: #111827; color: #e5e7eb; padding: 1rem; border-radius: .5rem; overflow: auto; }
+    a { text-decoration: none; }
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-dark bg-dark sticky-top">
+  <div class="container">
+    <span class="navbar-brand mb-0">راهنمای صفر تا پلتفرم متا</span>
+  </div>
+</nav>
+
+<header class="hero py-5">
+  <div class="container">
+    <p class="text-secondary mb-2">فقط خدمات رسمی Meta · Instagram Platform و Graph API</p>
+    <h1 class="display-6">ساخت پلتفرمی مشابه Postproxy برای فرد مبتدی</h1>
+    <p class="lead mt-3 mb-0">این سند هدف متا، هدف Postproxy، روند داشبورد متا، و ترتیب ساخت محصول خود را با جمله‌های کوتاه می‌گوید.</p>
+  </div>
+</header>
+
+<main class="container py-5">
+  <div class="alert alert-warning">
+    این سند مجوز رسمی متا نیست. قبل از انتشار، متن فعلی را در
+    <a href="https://developers.facebook.com/terms/">Platform Terms</a>،
+    <a href="https://developers.facebook.com/devpolicy/">Developer Policies</a>
+    و
+    <a href="https://developers.facebook.com/docs/instagram-platform">Instagram Platform</a>
+    بخوانید. متا مستندات را تغییر می‌دهد.
+  </div>
+
+  <section class="mb-5" id="roles">
+    <h2>سه نقش</h2>
+    <div class="row g-3 mt-1">
+      <div class="col-md-4">
+        <div class="card h-100"><div class="card-body">
+          <h3 class="h5">متا</h3>
+          <p class="mb-0">مالک اینستاگرام و فیسبوک است. API را می‌دهد. دسترسی را تأیید یا قطع می‌کند.</p>
+        </div></div>
+      </div>
+      <div class="col-md-4">
+        <div class="card h-100"><div class="card-body">
+          <h3 class="h5">شما</h3>
+          <p class="mb-0">سازنده پلتفرم هستید. مشتری حساب خود را وصل می‌کند. شما فقط به دستور همان مشتری عمل می‌کنید.</p>
+        </div></div>
+      </div>
+      <div class="col-md-4">
+        <div class="card h-100"><div class="card-body">
+          <h3 class="h5">مشتری</h3>
+          <p class="mb-0">مالک حساب Business یا Creator است. رمز اینستاگرام را به شما نمی‌دهد. فقط در صفحه ورود متا مجوز می‌دهد.</p>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-5" id="meta-goal">
+    <h2>هدف متا از API</h2>
+    <p>متا API را برای خزیدن یا خریدن داده عمومی نساخته است. هدف این است که حساب حرفه‌ای حضور خود را از یک نرم‌افزار مورد تأیید مدیریت کند.</p>
+    <ul>
+      <li>حساب Professional پست، Reel، Story، کامنت و پیام را منتشر یا مدیریت می‌کند.</li>
+      <li>متا مشخص می‌کند کدام اپ به کدام حساب دسترسی دارد.</li>
+      <li>متا حجم انتشار، نوع داده، و مدت نگهداری توکن را محدود می‌کند.</li>
+      <li>حساب Personal به API انتشار دسترسی ندارد.</li>
+    </ul>
+    <p class="mb-0">فراخوانی Instagram Platform در حال حاضر رایگان است. شرایط متا تضمین نمی‌کند که Platform همیشه رایگان بماند. WhatsApp Business Platform جدا است و پیام خروجی هزینه دارد.</p>
+  </section>
+
+  <section class="mb-5" id="postproxy-goal">
+    <h2>هدف Postproxy</h2>
+    <p>Postproxy اپ متا نیست. یک شرکت واسط است. مشتری یک درخواست به <code>https://api.postproxy.dev/api/posts</code> می‌فرستد. Postproxy جریان پیچیده متا را پنهان می‌کند.</p>
+    <div class="table-responsive">
+      <table class="table table-bordered bg-white">
+        <thead class="table-light"><tr><th>کار</th><th>مشتری Postproxy</th><th>سازنده مستقیم</th></tr></thead>
+        <tbody>
+          <tr><td>ورود و توکن</td><td>سمت Postproxy</td><td>سمت شما</td></tr>
+          <tr><td>ساخت کانتینر رسانه</td><td>پنهان</td><td>باید آن را بنویسید</td></tr>
+          <tr><td>App Review</td><td>اپ Postproxy</td><td>اپ شما</td></tr>
+          <tr><td>هزینه API متا</td><td>رایگان برای متا</td><td>رایگان برای متا</td></tr>
+          <tr><td>هزینه محصول</td><td>طرح Postproxy</td><td>طرح شما</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mb-0">هدف تجاری Postproxy فروش سادگی است. مشتری چند شبکه را با یک قرارداد مدیریت می‌کند. این سند فقط قسمت متا را پوشش می‌دهد.</p>
+  </section>
+
+  <section class="mb-5" id="boundary">
+    <h2>مرز مجاز</h2>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="card border-success h-100"><div class="card-body">
+          <h3 class="h5 text-success">مجاز</h3>
+          <ul class="mb-0">
+            <li>محصولی بسازید که مشتری حساب خود را وصل کند.</li>
+            <li>فقط به دستور همان مشتری منتشر کنید.</li>
+            <li>داده هر مشتری را جدا نگه دارید.</li>
+            <li>برای خدمت خود پول بگیرید.</li>
+          </ul>
+        </div></div>
+      </div>
+      <div class="col-md-6">
+        <div class="card border-danger h-100"><div class="card-body">
+          <h3 class="h5 text-danger">ممنوع</h3>
+          <ul class="mb-0">
+            <li>فروش یا واگذاری مجوز Platform.</li>
+            <li>فروش Platform Data.</li>
+            <li>گرفتن رمز عبور اینستاگرام.</li>
+            <li>خزیدن حساب عمومی یا پشتیبان‌گیری بدون اجازه متا.</li>
+          </ul>
+        </div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-5" id="words">
+    <h2>واژه‌ها</h2>
+    <dl class="row bg-white border rounded p-3">
+      <dt class="col-sm-3">App</dt><dd class="col-sm-9">نرم‌افزار ثبت‌شده در داشبورد متا.</dd>
+      <dt class="col-sm-3">OAuth</dt><dd class="col-sm-9">ورودی که مشتری رمز را به شما نمی‌دهد. متا یک کد موقت می‌دهد.</dd>
+      <dt class="col-sm-3">Access token</dt><dd class="col-sm-9">کلید موقت دسترسی. آن را فقط در سرور نگه دارید.</dd>
+      <dt class="col-sm-3">Standard Access</dt><dd class="col-sm-9">دسترسی به حساب خود یا نقش‌های اپ. App Review لازم نیست.</dd>
+      <dt class="col-sm-3">Advanced Access</dt><dd class="col-sm-9">دسترسی به حساب مشتریان بیرونی. App Review لازم است.</dd>
+      <dt class="col-sm-3">Tech Provider</dt><dd class="col-sm-9">کسب‌وکاری که برای مشتری از API رسمی استفاده می‌کند. Access Verification لازم است.</dd>
+      <dt class="col-sm-3">Container</dt><dd class="col-sm-9">بسته رسانه قبل از انتشار. اول بسازید. سپس منتشر کنید.</dd>
+      <dt class="col-sm-3 mb-0">Platform Data</dt><dd class="col-sm-9 mb-0">هر داده‌ای که از متا می‌گیرید. فروش آن ممنوع است.</dd>
+    </dl>
+  </section>
+
+  <section class="mb-5" id="paths">
+    <h2>دو مسیر ورود</h2>
+    <p>یک اپ نمی‌تواند هر دو مسیر را هم‌زمان استفاده کند. برای محصول فقط‌اینستاگرام، مسیر اول را انتخاب کنید.</p>
+    <div class="table-responsive">
+      <table class="table table-bordered bg-white">
+        <thead class="table-light"><tr><th>مورد</th><th>Instagram Login</th><th>Facebook Login</th></tr></thead>
+        <tbody>
+          <tr><td>میزبان</td><td><code>graph.instagram.com</code></td><td><code>graph.facebook.com</code></td></tr>
+          <tr><td>Facebook Page</td><td>لازم نیست</td><td>لازم است و باید به حساب وصل باشد</td></tr>
+          <tr><td>مجوز انتشار</td><td><code>instagram_business_content_publish</code></td><td><code>instagram_content_publish</code></td></tr>
+          <tr><td>نوع حساب</td><td>Business یا Creator</td><td>Business یا Creator</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mb-5" id="meta-flow">
+    <h2>روند کار متا</h2>
+    <p>این ترتیب را دقیق اجرا کنید. مرحله را قبل از پایان مرحله قبل رد نکنید.</p>
+    <ol class="list-group list-group-numbered">
+      <li class="list-group-item">حساب اینستاگرام را به Professional تغییر دهید. نوع را Business یا Creator بگذارید.</li>
+      <li class="list-group-item">با حساب فیسبوک در <a href="https://developers.facebook.com/">developers.facebook.com</a> ثبت‌نام کنید.</li>
+      <li class="list-group-item">یک شخص حقوقی ثبت کنید. نام، نشانی، تلفن، ایمیل و وب‌سایت باید با مدارک یکی باشد.</li>
+      <li class="list-group-item">اپ جدید بسازید. نوع اپ را Business بگذارید. اپ غیر Business برای این کار کافی نیست.</li>
+      <li class="list-group-item">use case مدیریت محتوا و پیام اینستاگرام را انتخاب کنید. محصول Instagram را اضافه کنید.</li>
+      <li class="list-group-item">Business Verification را کامل کنید.</li>
+      <li class="list-group-item">Access Verification را شروع کنید. متا بررسی می‌کند که کسب‌وکار Tech Provider است.</li>
+      <li class="list-group-item">سیاست حریم خصوصی را روی یک URL عمومی و بدون محدودیت جغرافیایی منتشر کنید. روش حذف داده را در آن بنویسید. همان URL را در داشبورد ثبت کنید.</li>
+      <li class="list-group-item">در بخش API setup with Instagram login، Business Login را تنظیم کنید. آدرس بازگشت OAuth را دقیق ثبت کنید.</li>
+      <li class="list-group-item">شناسه و رمز را از همان بخش Business Login بخوانید. App Secret را در کد کلاینت قرار ندهید.</li>
+      <li class="list-group-item">حساب خود را وصل کنید. یک فراخوانی آزمایشی بزنید: <code>GET /me?fields=user_id,username</code>.</li>
+      <li class="list-group-item">نسخه Graph API را از داشبورد بخوانید. نمونه مستند ممکن است قدیمی باشد.</li>
+      <li class="list-group-item">برای مشتری بیرونی، Advanced Access و App Review را بگیرید. برای هر مجوز یک ویدئو از مسیر کامل بدهید.</li>
+      <li class="list-group-item">پس از تأیید، اپ را Live کنید.</li>
+    </ol>
+  </section>
+
+  <section class="mb-5" id="permissions">
+    <h2>مجوزها</h2>
+    <p>فقط مجوز مورد نیاز محصول را درخواست کنید. درخواست اضافه دلیل رایج رد بررسی است.</p>
+    <div class="table-responsive">
+      <table class="table table-bordered bg-white">
+        <thead class="table-light"><tr><th>مجوز</th><th>کار</th><th>نسخه اول</th></tr></thead>
+        <tbody>
+          <tr><td><code>instagram_business_basic</code></td><td>شناسه، نام کاربری، رسانه</td><td>بله</td></tr>
+          <tr><td><code>instagram_business_content_publish</code></td><td>ساخت کانتینر و انتشار</td><td>بله</td></tr>
+          <tr><td><code>instagram_business_manage_comments</code></td><td>خواندن و پاسخ کامنت</td><td>بعد از انتشار</td></tr>
+          <tr><td><code>instagram_business_manage_messages</code></td><td>پیام مستقیم</td><td>بعد از انتشار</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mb-0">نام‌های کوتاه قدیمی از ۲۷ ژانویه ۲۰۲۵ منسوخ شده‌اند. از نام کامل <code>instagram_business_</code> استفاده کنید.</p>
+  </section>
+
+  <section class="mb-5" id="oauth">
+    <h2>جریان توکن</h2>
+    <ol>
+      <li>مشتری روی دکمه اتصال می‌زند.</li>
+      <li>شما او را به صفحه مجوز متا می‌فرستید. <code>client_id</code>، <code>redirect_uri</code>، <code>response_type=code</code> و <code>scope</code> را بفرستید.</li>
+      <li>مشتری مجوز را تأیید می‌کند. متا یک code به آدرس بازگشت می‌فرستد.</li>
+      <li>سرور شما code را با App Secret عوض می‌کند. توکن کوتاه حدود ۱ ساعت اعتبار دارد.</li>
+      <li>توکن کوتاه را به توکن بلندمدت تبدیل کنید. اعتبار معمول ۶۰ روز است.</li>
+      <li>تمدید را قبل از انقضا زمان‌بندی کنید.</li>
+      <li>توکن را رمزنگاری کنید. آن را به مشتری ندهید.</li>
+    </ol>
+  </section>
+
+  <section class="mb-5" id="publish">
+    <h2>روند انتشار</h2>
+    <p>انتشار یک فراخوانی نیست. این سه مرحله را اجرا کنید.</p>
+    <div class="row g-3">
+      <div class="col-md-4"><div class="card h-100"><div class="card-body"><span class="badge text-bg-dark step-num">1</span><h3 class="h5 mt-2">ساخت کانتینر</h3><p class="mb-0"><code>POST /{ig-user-id}/media</code></p></div></div></div>
+      <div class="col-md-4"><div class="card h-100"><div class="card-body"><span class="badge text-bg-dark step-num">2</span><h3 class="h5 mt-2">انتظار</h3><p class="mb-0">وضعیت را بخوانید. تا پایان پردازش صبر کنید.</p></div></div></div>
+      <div class="col-md-4"><div class="card h-100"><div class="card-body"><span class="badge text-bg-dark step-num">3</span><h3 class="h5 mt-2">انتشار</h3><p class="mb-0"><code>POST /{ig-user-id}/media_publish</code></p></div></div></div>
+    </div>
+    <ul class="mt-3">
+      <li>برای کاروسل، اول کانتینر هر آیتم را بسازید. سپس کانتینر والد را منتشر کنید.</li>
+      <li>آدرس رسانه باید برای سرورهای متا قابل دریافت باشد.</li>
+      <li>تصویر پست باید JPEG باشد. ویدئو باید کدک و نسبت مورد قبول همان فرمت را داشته باشد.</li>
+      <li>سقف را از <code>GET /{ig-user-id}/content_publishing_limit</code> بخوانید. عبور از سقف خطا می‌دهد، نه صورتحساب.</li>
+      <li>کامنت اول یک فراخوانی جدا بعد از انتشار است.</li>
+    </ul>
+  </section>
+
+  <section class="mb-5" id="build">
+    <h2>ترتیب ساخت پلتفرم</h2>
+    <p>نسخه اول را فقط برای انتشار اینستاگرام بسازید. کامنت، پیام، فیسبوک و واتساپ را بعد اضافه کنید.</p>
+    <div class="accordion" id="buildSteps">
+      <div class="accordion-item">
+        <h3 class="accordion-header"><button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#s1">1. هویت و صفحات عمومی</button></h3>
+        <div id="s1" class="accordion-collapse collapse show" data-bs-parent="#buildSteps"><div class="accordion-body">شرکت را ثبت کنید. وب‌سایت، سیاست حریم خصوصی، شرایط استفاده، روش حذف داده و راه تماس پشتیبانی را منتشر کنید. قرارداد مشتری باید شرایط متا را بپذیرد.</div></div>
+      </div>
+      <div class="accordion-item">
+        <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#s2">2. اپ متا</button></h3>
+        <div id="s2" class="accordion-collapse collapse" data-bs-parent="#buildSteps"><div class="accordion-body">روند بالا را تا مرحله فراخوانی آزمایشی انجام دهید. تا این مرحله فقط حساب خود را وصل کنید.</div></div>
+      </div>
+      <div class="accordion-item">
+        <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#s3">3. پایگاه داده</button></h3>
+        <div id="s3" class="accordion-collapse collapse" data-bs-parent="#buildSteps"><div class="accordion-body">چهار جدول کافی است: مشتری، کلید API، حساب وصل‌شده، صف انتشار. توکن را در جدول حساب، به‌صورت رمزنگاری‌شده، نگه دارید. هر ردیف باید شناسه مشتری داشته باشد.</div></div>
+      </div>
+      <div class="accordion-item">
+        <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#s4">4. لینک اتصال</button></h3>
+        <div id="s4" class="accordion-collapse collapse" data-bs-parent="#buildSteps"><div class="accordion-body">یک صفحه وب بسازید. مشتری از داخل محصول شما روی آن می‌زند. پس از بازگشت، حساب را به همان مشتری نسبت دهید. دکمه قطع اتصال را هم بسازید.</div></div>
+      </div>
+      <div class="accordion-item">
+        <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#s5">5. API خود</button></h3>
+        <div id="s5" class="accordion-collapse collapse" data-bs-parent="#buildSteps"><div class="accordion-body">یک مسیر مثل <code>POST /v1/posts</code> بسازید. هدر را <code>Authorization: Bearer</code> بگذارید. بدنه شامل متن، شناسه حساب، و آدرس رسانه است. درخواست را فوراً منتشر نکنید. آن را در صف بگذارید.</div></div>
+      </div>
+      <div class="accordion-item">
+        <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#s6">6. کارگر صف</button></h3>
+        <div id="s6" class="accordion-collapse collapse" data-bs-parent="#buildSteps"><div class="accordion-body">کارگر کانتینر را می‌سازد. وضعیت را چک می‌کند. سپس منتشر می‌کند. خطا را ذخیره می‌کند. تلاش مجدد را محدود کنید. سقف هر حساب را جدا اعمال کنید.</div></div>
+      </div>
+      <div class="accordion-item">
+        <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#s7">7. وضعیت و وب‌هوک</button></h3>
+        <div id="s7" class="accordion-collapse collapse" data-bs-parent="#buildSteps"><div class="accordion-body">مشتری باید وضعیت queued، processing، published و failed را بخواند. پس از پایان، یک رویداد به URL مشتری بفرستید. امضای وب‌هوک را بررسی کنید.</div></div>
+      </div>
+      <div class="accordion-item">
+        <h3 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#s8">8. بررسی و حالت Live</button></h3>
+        <div id="s8" class="accordion-collapse collapse" data-bs-parent="#buildSteps"><div class="accordion-body">ویدئو باید اتصال حساب، تأیید مجوز و یک انتشار واقعی را نشان دهد. حساب آزمایش برای بازبین بسازید. پس از تأیید، اپ را Live کنید.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-5" id="sample">
+    <h2>نمونه قرارداد خود</h2>
+    <p>مشتری این درخواست را به سرور شما می‌فرستد. سرور شما آن را به دو فراخوانی متا تبدیل می‌کند.</p>
+<pre><code>POST /v1/posts
+Authorization: Bearer YOUR_CUSTOMER_KEY
+
+{
+  "account_id": "ig_123",
+  "text": "نمونه پست",
+  "media_url": "https://cdn.example.com/photo.jpg",
+  "format": "post"
+}</code></pre>
+  </section>
+
+  <section class="mb-5" id="controls">
+    <h2>کنترل‌های الزامی</h2>
+    <ul>
+      <li>توکن را در حالت سکون رمزنگاری کنید.</li>
+      <li>درخواست یک مشتری نباید به حساب مشتری دیگر برسد.</li>
+      <li>App Secret و توکن را در لاگ ننویسید.</li>
+      <li>پس از قطع اتصال، توکن و Platform Data همان مشتری را حذف کنید.</li>
+      <li>فهرست مشتری و راه تماس را نگه دارید. متا می‌تواند آن را بخواهد.</li>
+      <li>اگر متا قطع یک مشتری را خواست، همان دسترسی را فوراً قطع کنید.</li>
+      <li>دسترسی غیرمجاز به Platform Data را سریع به متا گزارش کنید.</li>
+    </ul>
+  </section>
+
+  <section class="mb-5" id="cost">
+    <h2>هزینه و ریسک</h2>
+    <div class="table-responsive">
+      <table class="table table-bordered bg-white">
+        <thead class="table-light"><tr><th>مورد</th><th>وضع</th></tr></thead>
+        <tbody>
+          <tr><td>فراخوانی Instagram API</td><td>رایگان در حال حاضر</td></tr>
+          <tr><td>App Review</td><td>بدون صورتحساب، ولی زمان‌بر</td></tr>
+          <tr><td>میزبانی، صف، ذخیره رسانه</td><td>هزینه واقعی شما</td></tr>
+          <tr><td>پول مشتری</td><td>مجاز برای خدمت شما. فروش خود API متا ممنوع است</td></tr>
+          <tr><td>تخلف یک مشتری</td><td>می‌تواند اپ مشترک را قطع کند</td></tr>
+          <tr><td>عدم استفاده از API</td><td>۲۸ روز عدم استفاده می‌تواند دسترسی را معلق کند</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mb-5" id="checklist">
+    <h2>فهرست قبل از مشتری اول</h2>
+    <ul class="list-group">
+      <li class="list-group-item">حساب آزمایشی Professional دارید.</li>
+      <li class="list-group-item">اپ Business ساخته شده است.</li>
+      <li class="list-group-item">Business Verification و Access Verification تکمیل شده است.</li>
+      <li class="list-group-item">سیاست حریم خصوصی و حذف داده عمومی است.</li>
+      <li class="list-group-item">انتشار روی حساب خود موفق است.</li>
+      <li class="list-group-item">توکن فقط در سرور و رمزنگاری است.</li>
+      <li class="list-group-item">جداسازی مشتری آزمایش شده است.</li>
+      <li class="list-group-item">Advanced Access فقط برای مجوزهای نسخه اول تأیید شده است.</li>
+      <li class="list-group-item">اپ Live است.</li>
+      <li class="list-group-item">دکمه قطع و حذف داده کار می‌کند.</li>
+    </ul>
+  </section>
+
+  <section id="sources">
+    <h2>منبع رسمی</h2>
+    <ul>
+      <li><a href="https://developers.facebook.com/docs/instagram-platform">Instagram Platform</a></li>
+      <li><a href="https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login">Instagram API with Instagram Login</a></li>
+      <li><a href="https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login/get-started">اولین فراخوانی</a></li>
+      <li><a href="https://developers.facebook.com/docs/instagram-platform/content-publishing">Content Publishing</a></li>
+      <li><a href="https://developers.facebook.com/docs/instagram-platform/app-review">App Review</a></li>
+      <li><a href="https://developers.facebook.com/documentation/development/release/access-verification">Access Verification</a></li>
+      <li><a href="https://developers.facebook.com/terms/">Platform Terms</a></li>
+      <li><a href="https://developers.facebook.com/devpolicy/">Developer Policies</a></li>
+      <li><a href="https://postproxy.dev/platforms/instagram/">صفحه اینستاگرام Postproxy</a></li>
+    </ul>
+    <p class="text-secondary mb-0">تاریخ تنظیم سند: ۲۲ اکتبر ۲۰۲۶. قبل از پیاده‌سازی، هر مرحله را با داشبورد فعلی متا تطبیق دهید.</p>
+  </section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
